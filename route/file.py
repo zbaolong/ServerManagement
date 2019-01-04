@@ -1,6 +1,6 @@
 from flask import request,render_template,redirect,send_file, send_from_directory,url_for,session,make_response
 import time
-from index import app
+from index import app,url
 import json
 import os
 from PIL import Image
@@ -12,7 +12,10 @@ import traceback
 from lib import extract
 from config.config import workPath
 from .login import cklogin
-
+url.append({
+        "title": "文件管理器",
+        "href": "/file"
+    })
 sep=os.path.sep          #当前系统分隔符
 @app.route('/file',methods=['GET','POST'])
 @cklogin()
@@ -299,7 +302,6 @@ def secectList():
         session['secectList'] = '[]'
     elif types == 'get':
         return json.dumps({'resultCode':0,'result':session['secectList']})
-    print(session['secectList'])
     return json.dumps({'resultCode':0,'result':'success'})
 
 

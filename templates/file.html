@@ -32,7 +32,9 @@
                 <option value="copy">复制并粘贴</option>
                 <option value="zip">压缩至此</option>
             </select>
- 
+             <a href='javascript:void(0);' onclick='ChangePath()' class="layui-btn layui-btn-small">
+                <i class="layui-icon"></i> 跳转
+            </a>
             <a style="margin-left:30px">当前路径</a>
             <a id='fileRoute' style="margin-left:10px"></a>
         </blockquote>
@@ -81,7 +83,7 @@
     <script type="text/javascript" src="/static/js/base64.js"></script>
     <script type="text/javascript" src="/static/js/ffevent.js"></script>
     <script type="text/javascript">
-        var selectedList = new Array();
+        var selectedList = new Array(); //全局变量,储存当前已选中文件,其内元素为Base64编码的文件全路径
         $.ajax({
             type: "POST",
             dataType: "html",
@@ -443,6 +445,18 @@
                     }
                 );
             };
+            ChangePath = function () {
+                inputprompt = layer.prompt({
+                        title: '请输入跳转目录',
+                        value:nowPath
+                    },
+                    function (value, index, elem) {
+                        var promptInputValue = value;
+                        GetResult(promptInputValue)
+                        layer.close(inputprompt);
+                    }
+                );
+            };
             CreateFile = function () {
                 inputprompt = layer.prompt({
                         title: '创建的文件名'
@@ -673,17 +687,8 @@
                         }
                     }
                 });
-
-
-
-
             }
         });
     </script>
 </body>
-
 </html>
-
-
-
-

@@ -13,7 +13,7 @@ class taskset():
             for i in lastTask[1]:
                 self.CreatTask(json.loads(i[0]),writeToSql = False)
         else:
-            print('从数据库恢复任务出错！')
+            pass
         '''
         {'type':'day',
         'hour':'12',
