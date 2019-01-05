@@ -20,10 +20,6 @@ class Slaver:
     def _connect_target(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(self.target_addr)
-        log.debug("connected to target[{}] at: {}".format(
-            sock.getpeername(),
-            sock.getsockname(),
-        ))
         return sock
     def _response_heartbeat(self, conn_slaver, hb_from_master):
         if hb_from_master.prgm_ver < 0x000B:
@@ -35,14 +31,8 @@ class Slaver:
                 conn_slaver,
                 expect_ptype=CtrlPkg.PTYPE_HEART_BEAT)
             if verify:
-                log.debug("heartbeat success {}".format(
-                    fmt_addr(conn_slaver.getsockname())))
                 return True
             else:
-                log.warning(
-                    "received a wrong pkg[{}] during heartbeat, {}".format(
-                        pkg, conn_slaver.getsockname()
-                    ))
                 return False
 
     def _stage_ctrlpkg(self, conn_slaver):
@@ -50,7 +40,6 @@ class Slaver:
             pkg, verify = CtrlPkg.recv(conn_slaver, SPARE_SLAVER_TTL)
             if not verify:
                 return False
-            log.debug("CtrlPkg from {}: {}".format(conn_slaver.getpeername(), pkg))
             if pkg.pkg_type == CtrlPkg.PTYPE_HEART_BEAT:
                 if not self._response_heartbeat(conn_slaver, pkg):
                     return False
@@ -62,7 +51,6 @@ class Slaver:
 
     def _transfer_complete(self, addr_slaver):
         del self.working_pool[addr_slaver]
-        log.info("slaver complete: {}".format(addr_slaver))
 
     def _slaver_working(self, conn_slaver):
         addr_slaver = conn_slaver.getsockname()
@@ -70,31 +58,19 @@ class Slaver:
         try:
             hs = self._stage_ctrlpkg(conn_slaver)
         except Exception as e:
-            log.warning("slaver{} waiting handshake failed {}".format(
-                fmt_addr(addr_slaver), e))
-            log.debug(traceback.print_exc())
             hs = False
         else:
             if not hs:
-                log.warning("bad handshake or timeout between: {} and {}".format(
-                    fmt_addr(addr_master), fmt_addr(addr_slaver)))
+                pass
 
         if not hs:
             del self.spare_slaver_pool[addr_slaver]
             try_close(conn_slaver)
-            log.warning("a slaver[{}] abort due to handshake error or timeout".format(
-                fmt_addr(addr_slaver)))
             return
-        else:
-            log.info("Success master handshake from: {} to {}".format(
-                fmt_addr(addr_master), fmt_addr(addr_slaver)))
         self.working_pool[addr_slaver] = self.spare_slaver_pool.pop(addr_slaver)
         try:
             conn_target = self._connect_target()
         except:
-            log.error("unable to connect target")
-            try_close(conn_slaver)
-
             del self.working_pool[addr_slaver]
             return
         self.working_pool[addr_slaver]["conn_target"] = conn_target
@@ -122,8 +98,6 @@ class Slaver:
             try:
                 conn_slaver = self._connect_master()
             except Exception as e:
-                log.warning("unable to connect master {}".format(e))
-                log.debug(traceback.format_exc())
                 time.sleep(err_delay)
                 if err_delay < max_err_delay:
                     err_delay += 1
@@ -132,14 +106,7 @@ class Slaver:
                 t = threading.Thread(target=self._slaver_working,args=(conn_slaver,))
                 t.daemon = True
                 t.start()
-                log.info("connected to master[{}] at {} total: {}".format(
-                    fmt_addr(conn_slaver.getpeername()),
-                    fmt_addr(conn_slaver.getsockname()),
-                    len(self.spare_slaver_pool),
-                ))
             except Exception as e:
-                log.error("unable create Thread: {}".format(e))
-                log.debug(traceback.format_exc())
                 time.sleep(err_delay)
                 if err_delay < max_err_delay:
                     err_delay += 1
@@ -148,10 +115,6 @@ class Slaver:
 
 
 def run_slaver(communicate_addr, target_addr, max_spare_count=5):
-    log.info("running as slaver, master addr: {} target: {}".format(
-        fmt_addr(communicate_addr), fmt_addr(target_addr)
-    ))
-
     Slaver(communicate_addr, target_addr, max_spare_count=max_spare_count).serve_forever()
 
 
@@ -208,7 +171,6 @@ def main_slaver(m,t,k):
     global SECRET_KEY_REVERSED_CRC32
     args = argparse_slaver(m=m,t=t,k=k)
     if args.verbose and args.quiet:
-        print("-v and -q should not appear together")
         exit(1)
     communicate_addr = split_host(args.master)
     target_addr = split_host(args.target)
@@ -218,17 +180,6 @@ def main_slaver(m,t,k):
     CtrlPkg.SECRET_KEY_REVERSED_CRC32 = binascii.crc32(SECRET_KEY[::-1].encode('utf-8')) & 0xffffffff
     SPARE_SLAVER_TTL = args.SPARE_SLAVER_TTL
     max_spare_count = args.max_spare_count
-    if args.quiet < 2:
-        if args.verbose:
-            level = logging.DEBUG
-        elif args.quiet:
-            level = logging.WARNING
-        else:
-            level = logging.INFO
-        configure_logging(level)
-    log.info("shootback {} slaver running".format(version_info()))
-    log.info("Master: {}".format(fmt_addr(communicate_addr)))
-    log.info("Target: {}".format(fmt_addr(target_addr)))
     run_slaver(communicate_addr, target_addr, max_spare_count=max_spare_count)
 
     #main_slaver()

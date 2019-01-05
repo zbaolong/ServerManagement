@@ -1,6 +1,6 @@
 from flask import Flask,render_template,request,jsonify
 import time,os,requests,platform,json
-from config.config import port,NATPenetration
+from config.config import port,NATPenetration,NATPenetrationPort
 from sqlitedb.sqlitedb import sqlClass
 from threading import Thread
 sql = sqlClass()
@@ -19,12 +19,13 @@ if __name__ == '__main__':
     from route import *
     if NATPenetration:
         from lib.slaver import main_slaver
+        import uuid
         try:
-            NATData = requests.post('http://'+NATPenetration+'/CreatDriver',
+            NATData = requests.post('http://'+NATPenetration+':'+str(NATPenetrationPort)+'/CreatDriver',
             data={'driverID':
-            platform.platform() + '-' + platform.architecture()[0]+'-'+platform.uname().processor
+            platform.platform() + '__MAC:_' + uuid.UUID(int = uuid.getnode()).hex[-12:]
             }).text
-        except :
+        except:
             pass#若出错,请检查你的内网穿透服务端是否正确配置
         else:
             NATData = json.loads(NATData).get('result')

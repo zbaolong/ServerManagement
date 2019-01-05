@@ -6,7 +6,6 @@ import time
 import binascii
 import struct
 import collections
-import logging
 import socket
 import select
 import threading
@@ -22,7 +21,6 @@ SECRET_KEY = "0"
 SPARE_SLAVER_TTL = 300
 INTERNAL_VERSION = 0x000D
 __version__ = (2, 2, 8, INTERNAL_VERSION)
-log = logging.getLogger(__name__)
 
 
 def version_info():
@@ -30,10 +28,7 @@ def version_info():
 
 
 def configure_logging(level):
-    logging.basicConfig(
-        level=level,
-        format='[%(levelname)s %(asctime)s] %(message)s',
-    )
+    pass
 
 
 def fmt_addr(socket):
@@ -90,7 +85,6 @@ class SocketBridge:
         t = threading.Thread(target=self.start)
         t.daemon = True
         t.start()
-        log.info("SocketBridge daemon started")
         return t
 
     def start(self):
@@ -98,9 +92,7 @@ class SocketBridge:
             try:
                 self._start()
             except:
-                log.error("FATAL ERROR! SocketBridge failed {}".format(
-                    traceback.format_exc()
-                ))
+                pass
 
     def _start(self):
         buff = memoryview(bytearray(RECV_BUFFER_SIZE))
@@ -165,16 +157,14 @@ class SocketBridge:
         if conn in self.callbacks:
             try:
                 self.callbacks[conn]()
-            except Exception as e:
-                log.error("traceback error: {}".format(e))
-                log.debug(traceback.format_exc())
+            except :
+                pass
             del self.callbacks[conn]
         elif _mapped_conn and _mapped_conn in self.callbacks:
             try:
                 self.callbacks[_mapped_conn]()
-            except Exception as e:
-                log.error("traceback error: {}".format(e))
-                log.debug(traceback.format_exc())
+            except :
+                pass
             del self.callbacks[_mapped_conn]
 
 
@@ -281,7 +271,6 @@ class CtrlPkg:
                 cls.PACKAGE_SIZE, len(raw)
             ))
         pkg_ver, pkg_type, prgm_ver, data_raw = struct.unpack(cls.FORMAT_PKG, raw)
-        logging.info("CtrlPkg,decode_only,,,,pkg_ver:{}, pkg_type:{}, prgm_ver:{}".format(pkg_ver, pkg_type,prgm_ver))
         data = cls.data_decode(pkg_type, data_raw)
 
         return cls(
@@ -331,8 +320,6 @@ class CtrlPkg:
 
     @classmethod
     def recv(cls, sock, timeout=CTRL_PKG_TIMEOUT, expect_ptype=None):
-        logging.info("CtrlPkg,recv,sock:{},expect_ptype:{}".format(sock, expect_ptype))
-
         buff = select_recv(sock, cls.PACKAGE_SIZE, timeout)
         pkg, verify = CtrlPkg.decode_verify(buff, pkg_type=expect_ptype)  # type: CtrlPkg,bool
         return pkg, verify
