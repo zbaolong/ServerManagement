@@ -1,5 +1,5 @@
 # WebFileManager
-服务器管理工具，目前有文件管理器、进程监控、计划任务、webSSH、多主机管理,本地桌面等，准备在自己服务器上用，后续会加入更多运维相关，本项目后端python+flask，前端使用layui+jquery，代码在线编辑使用codemirror，webSSH后端使用paramiko前端xterm
+服务器管理工具，目前有文件管理器、进程监控、计划任务、webSSH、多主机管理、本地桌面、内网穿透等，后续会加入更多运维相关，本项目后端python+flask
 ## [更新日志](readme/更新日志.md)
 ## 功能介绍
 ### 1.文件管理
